@@ -1,62 +1,44 @@
 use std::time::Instant;
 const UPDATE_INTERVAL: u32 = 40;
+const MAX_FRAMESKIP: u32 = 5;
 
 fn main() {
-    // track the update delay's exponential moving average (EMA)
-    let mut frame_delay_ema: f64 = 0.0;
+    // track the delta time (the duration of the previous loop in milliseconds)
+    let mut delta_time: u32 = 0;
 
-    // track the latest delays
-    let mut frame_delay: u32 = 0;
-    let mut tick_delay: u32 = 0;
-    
     loop {
         // start per-loop delay timer
         let timer = Instant::now();
 
-        // DEBUG - track if a tick has happened on this frame
-        let mut ticked: bool = false;
+        // track the number of update ticks
+        let mut ticks: u32 = 0;
 
-        // update (game logic, etc.)
-        // executes every UPDATE_INTERVAL milliseconds at maximum
-        if tick_delay >= UPDATE_INTERVAL {
-            // perform all per-tick logic here
-            update();
+        update(&mut delta_time, &mut ticks);
 
-            // reset the tick delay
-            tick_delay = 0;
-
-            // DEBUG
-            ticked = true;
-        }
+        display();
         
-        // display (rendering)
-        // executes as fast as possible
-        {
-            display();
-        }
-        
-        // get the current frame delay, update the frame delay EMA and the tick delay
-        frame_delay = timer.elapsed().as_millis() as u32;
-        frame_delay_ema = lerp_1d(frame_delay_ema, frame_delay as f64, 0.1f64);
-        tick_delay += frame_delay;
-        
-        // debug
-        let frame_rate = (1000.0f64 / frame_delay_ema as f64) as u32;
-        if ticked {
-            println!("Frame Delay: {}ms | Frame Rate: {}Hz | Ticked!", frame_delay, frame_rate);
-        } else {
-            println!("Frame Delay: {}ms | Frame Rate: {}Hz", frame_delay, frame_rate);
-        }
+        // update the delta time
+        let elapsed_time: u32 = timer.elapsed().as_millis() as u32;
+        delta_time += elapsed_time;
     }
 }
 
 // update function
-fn update() {
-    waste_time(64);
+fn update(delta_time: &mut u32, ticks: &mut u32) {
+    // keep going even if frames aren't displaying, but halt if there are too many frameskips
+    while *delta_time >= UPDATE_INTERVAL && *ticks < MAX_FRAMESKIP {
+        println!("Updating...");
+        waste_time(64);
+
+        // record the tick and reset the delta time
+        *ticks += 1;
+        *delta_time = 0;
+    }
 }
 
 // render function
 fn display() {
+    println!("Displaying...");
     waste_time(16);
 }
 

@@ -6,6 +6,8 @@ fn main() {
     // track the delta time (the duration of the previous loop in milliseconds)
     let mut delta_time: u32 = 0;
 
+    // allow for interpolation
+
     loop {
         // start per-loop delay timer
         let timer = Instant::now();
@@ -24,14 +26,17 @@ fn main() {
 }
 
 // update function
+// TODO - I think I'm resetting delta time in the wrong place or just using it incorrectly; frameskips aren't happening at all
 fn update(delta_time: &mut u32, ticks: &mut u32) {
     // keep going even if frames aren't displaying, but halt if there are too many frameskips
     while *delta_time >= UPDATE_INTERVAL && *ticks < MAX_FRAMESKIP {
         println!("Updating...");
         waste_time(64);
 
-        // record the tick and reset the delta time
+        // record the tick
         *ticks += 1;
+     
+        // reset the delta time
         *delta_time = 0;
     }
 }

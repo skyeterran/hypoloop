@@ -39,7 +39,7 @@ fn update(delta_time: &mut u32, ticks: &mut u32) {
 // render function
 fn display() {
     println!("Displaying...");
-    waste_time(16);
+    waste_time(32);
 }
 
 // 1D linear interpolation

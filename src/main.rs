@@ -1,6 +1,5 @@
 use std::time::Instant;
-const UPDATE_INTERVAL: u32 = 40;
-const MAX_FRAMESKIP: u32 = 5;
+const UPDATE_INTERVAL: u32 = 80;
 
 fn main() {
     // track the delta time (the duration of the previous loop in milliseconds)
@@ -12,13 +11,23 @@ fn main() {
         // start per-loop delay timer
         let timer = Instant::now();
 
-        // track the number of update ticks
-        let mut ticks: u32 = 0;
+        // update
+        if delta_time >= UPDATE_INTERVAL {
+            println!("Updating");
+            update();
 
-        update(&mut delta_time, &mut ticks);
+            // DEBUG
 
+            // reset the delta time
+            delta_time = timer.elapsed().as_millis() as u32;
+        }
+
+        // support interpolation via fractional "relative time"
+        let relative_time: f32 = delta_time as f32 / UPDATE_INTERVAL as f32;
+
+        println!("Displaying | Delta Time: {}ms | Relative Time: {}", delta_time, relative_time);
         display();
-        
+
         // update the delta time
         let elapsed_time: u32 = timer.elapsed().as_millis() as u32;
         delta_time += elapsed_time;
@@ -27,24 +36,13 @@ fn main() {
 
 // update function
 // TODO - I think I'm resetting delta time in the wrong place or just using it incorrectly; frameskips aren't happening at all
-fn update(delta_time: &mut u32, ticks: &mut u32) {
-    // keep going even if frames aren't displaying, but halt if there are too many frameskips
-    while *delta_time >= UPDATE_INTERVAL && *ticks < MAX_FRAMESKIP {
-        println!("Updating...");
-        waste_time(64);
-
-        // record the tick
-        *ticks += 1;
-     
-        // reset the delta time
-        *delta_time = 0;
-    }
+fn update() {
+    waste_time(64);
 }
 
 // render function
 fn display() {
-    println!("Displaying...");
-    waste_time(32);
+    waste_time(4);
 }
 
 // 1D linear interpolation

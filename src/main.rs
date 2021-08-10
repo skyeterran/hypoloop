@@ -1,4 +1,5 @@
 use std::time::{Duration, Instant};
+use rand::Rng;
 
 // loop constants
 const UPDATE_INTERVAL: u32 = 40;
@@ -8,8 +9,9 @@ const DEBUG_LOOP: bool = false;
 const GRAVITY: f32 = -9.8;
 
 // a struct made for physics objects
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 struct PhysicsObject {
+    name: String,
 	location: [f32; 3],
 	velocity: [f32; 3],
     gravity_enabled: bool
@@ -17,19 +19,26 @@ struct PhysicsObject {
 
 fn main() {
     let mut simulate: bool = true;
-
+    
     // global time
     let mut time = Duration::new(0,0);
-
+    
     // track the delta time (the duration of the previous loop in milliseconds)
     let mut delta_time = Duration::new(0, 0);
+    
+    // a vector of objects to calculate physics for
+    let mut objects: Vec<PhysicsObject> = vec![];
+    let mut rng = rand::thread_rng();
+    for i in 0..6 {
+        let new_object = PhysicsObject {
+            name: i.to_string(),
+            location: [0.0, 0.0, 0.0],
+            velocity: [rng.gen::<f32>() * 10.0, rng.gen::<f32>() * 10.0, rng.gen::<f32>() * 10.0],
+            gravity_enabled: true
+        };
 
-    // create a test physics object
-    let mut test_object = PhysicsObject {
-        location: [0.0, 0.0, 10.0],
-        velocity: [0.0, 5.0, 0.0],
-        gravity_enabled: true
-    };
+        objects.push(new_object)
+    }
 
     while simulate {
         // start timing the loop
@@ -37,14 +46,16 @@ fn main() {
 
         // update
         if delta_time.as_millis() as u32 >= UPDATE_INTERVAL {
-            update(delta_time, &mut test_object);
+            update(delta_time, &mut objects);
             
             // reset the delta time
             delta_time = Duration::new(0,0);
         }
         
         // DEBUG
-        println!("Time: {}s | test_object | Location: {:?} | Velocity: {:?}", time.as_millis() as f32 / 1000.0, test_object.location, test_object.velocity);
+        for object in objects.iter() {
+            println!("Time: {}s | {} | Location: {:?} | Velocity: {:?}", time.as_millis() as f32 / 1000.0, object.name, object.location, object.velocity);
+        }
         
         //display(delta_time, &test_object);
         
@@ -57,7 +68,7 @@ fn main() {
 
 // update function
 // TODO - I think I'm resetting delta time in the wrong place or just using it incorrectly; frameskips aren't happening at all
-fn update(delta_time: Duration, object: &mut PhysicsObject) {
+fn update(delta_time: Duration, objects: &mut Vec<PhysicsObject>) {
     if DEBUG_LOOP {
         println!("Updating");
     }
@@ -65,20 +76,26 @@ fn update(delta_time: Duration, object: &mut PhysicsObject) {
     // calculate the exact timestep (fractional time in seconds) from delta time
     let timestep: f32 = delta_time.as_millis() as f32 / 1000.0;
     
-    // update location based on velocity
-    for i in 0..3 {
-        object.location[i] += timestep * object.velocity[i];
-    }
-
-    // gravity
-    if object.gravity_enabled {
-        object.velocity[2] += GRAVITY * timestep;
-    }
-
-    // prevent the object from going below the ground plane, and kill downward velocity upon "hitting" the ground plane
-    if object.location[2] <= 0.0 {
-        object.location[2] = 0.0;
-        object.velocity[2] = object.velocity[2].max(0.0);
+    for object in objects.iter_mut() {
+        // update location based on velocity
+        for i in 0..3 {
+            // location += timestep * velocity
+            // use an FMA here to halve the rounding error
+            object.location[i] = timestep.mul_add(object.velocity[i], object.location[i]);
+        }
+    
+        // gravity
+        if object.gravity_enabled {
+            // velocity += timestep * gravity
+            // use an FMA here to halve the rounding error
+            object.velocity[2] = timestep.mul_add(GRAVITY, object.velocity[2]);
+        }
+    
+        // prevent the object from going below the ground plane, and kill downward velocity upon "hitting" the ground plane
+        if object.location[2] <= 0.0 {
+            object.location[2] = 0.0;
+            object.velocity[2] = object.velocity[2].max(0.0);
+        }
     }
 }
 
@@ -90,14 +107,6 @@ fn display(delta_time: Duration, object: &PhysicsObject) {
     // DEBUG
     if DEBUG_LOOP {
         println!("Displaying | Delta Time: {}ms | Relative Time: {}", delta_time.as_millis(), interpolation);
-    }
-
-    // create a "render object", which we can apply interpolation to
-    let mut render_object = *object;
-
-    // interpolate physics values for smooth rendering
-    for i in 0..3 {
-        render_object.location[i] += render_object.velocity[i] * interpolation;
     }
 
     // DEBUG

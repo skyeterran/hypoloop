@@ -46,7 +46,7 @@ fn main() {
         // DEBUG
         println!("Time: {}s | test_object | Location: {:?} | Velocity: {:?}", time.as_millis() as f32 / 1000.0, test_object.location, test_object.velocity);
         
-        display(delta_time, &test_object);
+        //display(delta_time, &test_object);
         
         // update the time
         let end_time = Instant::now().duration_since(start_time);

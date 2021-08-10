@@ -25,7 +25,7 @@ fn main() {
     // create a test physics object
     let mut test_object = PhysicsObject {
         location: [0.0, 0.0, 100.0],
-        velocity: [0.0, 0.0, 0.0],
+        velocity: [0.0, 5.0, 0.0],
         gravity_enabled: true
     };
 
@@ -36,21 +36,20 @@ fn main() {
         // update
         if delta_time.as_millis() as u32 >= UPDATE_INTERVAL {
             update(delta_time, &mut test_object);
-
-            // DEBUG
-            println!("Time: {}ms | test_object | Location: {:?} | Velocity: {:?}", time.as_millis(), test_object.location, test_object.velocity);
-
-            // keep track of time
-            time += delta_time;
-
+            
             // reset the delta time
             delta_time = Duration::new(0,0);
         }
         
-        // update the time
-        delta_time += Instant::now().duration_since(start_time);
-
+        // DEBUG
+        println!("Time: {}s | test_object | Location: {:?} | Velocity: {:?}", time.as_millis() as f32 / 1000.0, test_object.location, test_object.velocity);
+        
         display(delta_time, &test_object);
+        
+        // update the time
+        let end_time = Instant::now().duration_since(start_time);
+        delta_time += end_time;
+        time += end_time;
     }
 }
 

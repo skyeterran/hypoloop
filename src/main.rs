@@ -3,15 +3,20 @@ use rand::Rng;
 
 // loop constants
 const UPDATE_INTERVAL: u32 = 40;
-const DEBUG_LOOP: bool = false;
 
-// physics constants
+// debug constants
+const DEBUG_LOOP: bool = false;
+const DEBUG_OBJECTS: bool = false;
+const DEBUG_PERFORMANCE: bool = true;
+const FAIL_DELAY: u32 = 50;
+
+// scene constants
 const GRAVITY: f32 = -9.8;
+const OBJECT_COUNT: i32 = 100;
 
 // a struct made for physics objects
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 struct PhysicsObject {
-    name: String,
 	location: [f32; 3],
 	velocity: [f32; 3],
     gravity_enabled: bool
@@ -29,9 +34,8 @@ fn main() {
     // a vector of objects to calculate physics for
     let mut objects: Vec<PhysicsObject> = vec![];
     let mut rng = rand::thread_rng();
-    for i in 0..6 {
+    for i in 0..OBJECT_COUNT {
         let new_object = PhysicsObject {
-            name: i.to_string(),
             location: [0.0, 0.0, 0.0],
             velocity: [rng.gen::<f32>() * 10.0, rng.gen::<f32>() * 10.0, rng.gen::<f32>() * 10.0],
             gravity_enabled: true
@@ -48,13 +52,30 @@ fn main() {
         if delta_time.as_millis() as u32 >= UPDATE_INTERVAL {
             update(delta_time, &mut objects);
             
+            // DEBUG
+            if DEBUG_PERFORMANCE {
+                let interval = delta_time.as_millis() as u32;
+                println!("Update interval: {}ms | Object count: {}", interval, objects.len());
+
+                // add more objects until it slows down enough
+                if interval <= UPDATE_INTERVAL {
+                    for i in 0..10000 {
+                        let new_object = PhysicsObject {
+                            location: [0.0, 0.0, 0.0],
+                            velocity: [rng.gen::<f32>() * 10.0, rng.gen::<f32>() * 10.0, rng.gen::<f32>() * 10.0],
+                            gravity_enabled: true
+                        };
+                
+                        objects.push(new_object)
+                    }
+                } else {
+                    // stop the simulation
+                    simulate = false;
+                }
+            }
+
             // reset the delta time
             delta_time = Duration::new(0,0);
-        }
-        
-        // DEBUG
-        for object in objects.iter() {
-            println!("Time: {}s | {} | Location: {:?} | Velocity: {:?}", time.as_millis() as f32 / 1000.0, object.name, object.location, object.velocity);
         }
         
         //display(delta_time, &test_object);
@@ -63,6 +84,13 @@ fn main() {
         let end_time = Instant::now().duration_since(start_time);
         delta_time += end_time;
         time += end_time;
+                
+        // DEBUG
+        if DEBUG_OBJECTS {
+            for object in objects.iter() {
+                println!("Time: {}s | Location: {:?} | Velocity: {:?}", time.as_millis() as f32 / 1000.0, object.location, object.velocity);
+            }
+        }
     }
 }
 

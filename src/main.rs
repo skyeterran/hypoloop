@@ -16,6 +16,8 @@ struct PhysicsObject {
 }
 
 fn main() {
+    let mut simulate: bool = true;
+
     // global time
     let mut time = Duration::new(0,0);
 
@@ -24,12 +26,12 @@ fn main() {
 
     // create a test physics object
     let mut test_object = PhysicsObject {
-        location: [0.0, 0.0, 100.0],
+        location: [0.0, 0.0, 10.0],
         velocity: [0.0, 5.0, 0.0],
         gravity_enabled: true
     };
 
-    loop {
+    while simulate {
         // start timing the loop
         let start_time = Instant::now();
 

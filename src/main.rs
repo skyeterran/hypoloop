@@ -1,3 +1,4 @@
+use core::time;
 use std::time::{Duration, Instant};
 use rand::Rng;
 
@@ -6,129 +7,113 @@ const UPDATE_INTERVAL: u32 = 40;
 
 // debug constants
 const DEBUG_LOOP: bool = false;
-const DEBUG_OBJECTS: bool = false;
-const DEBUG_PERFORMANCE: bool = true;
-const FAIL_DELAY: u32 = 50;
+const DEBUG_TIME: bool = false;
+const DEBUG_PARTICLES: bool = true;
 
 // scene constants
+const TIMESCALE: f32 = 1.0;
 const GRAVITY: f32 = -9.8;
-const OBJECT_COUNT: i32 = 100;
+const PARTICLE_COUNT: i32 = 1;
 
-// a struct made for physics objects
+// a struct made for physics particles
 #[derive(Copy, Clone)]
-struct PhysicsObject {
+struct Particle {
 	location: [f32; 3],
 	velocity: [f32; 3],
+    acceleration: [f32; 3],
     gravity_enabled: bool
 }
 
 fn main() {
     let mut simulate: bool = true;
     
-    // global time
-    let mut time = Duration::new(0,0);
+    // start the clock to keep track of real time
+    let clock_start = Instant::now();
+
+    // track the end time of the last loop
+    let mut end_time = Instant::now();
+
+    // keep track of the last tick time
+    let mut last_tick = Instant::now();
     
-    // track the delta time (the duration of the previous loop in milliseconds)
-    let mut delta_time = Duration::new(0, 0);
-    
-    // a vector of objects to calculate physics for
-    let mut objects: Vec<PhysicsObject> = vec![];
-    let mut rng = rand::thread_rng();
-    for i in 0..OBJECT_COUNT {
-        let new_object = PhysicsObject {
-            location: [0.0, 0.0, 0.0],
-            velocity: [rng.gen::<f32>() * 10.0, rng.gen::<f32>() * 10.0, rng.gen::<f32>() * 10.0],
+    // a vector of particles
+    let mut particles: Vec<Particle> = vec![];
+    for i in 0..PARTICLE_COUNT {
+        let new_particle = Particle {
+            location: [0.0, 0.0, 10.0],
+            velocity: [0.0; 3],
+            acceleration: [0.0; 3],
             gravity_enabled: true
         };
 
-        objects.push(new_object)
+        particles.push(new_particle)
     }
 
     while simulate {
-        // start timing the loop
-        let start_time = Instant::now();
-
         // update
-        if delta_time.as_millis() as u32 >= UPDATE_INTERVAL {
-            update(delta_time, &mut objects);
-            
+        if delta_time(last_tick) >= UPDATE_INTERVAL {
             // DEBUG
-            if DEBUG_PERFORMANCE {
-                let interval = delta_time.as_millis() as u32;
-                println!("Update interval: {}ms | Object count: {}", interval, objects.len());
-
-                // add more objects until it slows down enough
-                if interval <= UPDATE_INTERVAL {
-                    for i in 0..10000 {
-                        let new_object = PhysicsObject {
-                            location: [0.0, 0.0, 0.0],
-                            velocity: [rng.gen::<f32>() * 10.0, rng.gen::<f32>() * 10.0, rng.gen::<f32>() * 10.0],
-                            gravity_enabled: true
-                        };
-                
-                        objects.push(new_object)
-                    }
-                } else {
-                    // stop the simulation
-                    simulate = false;
+            if DEBUG_TIME {
+                println!("Real time: {}ms | Delta time: {}ms", delta_time(clock_start), delta_time(last_tick));
+            }
+            if DEBUG_PARTICLES {
+                for i in 0..particles.len() {
+                    println!("Time: {}ms | Delta time: {} | Particle {} Location: {:?}, Velocity: {:?}, Acceleration: {:?}", delta_time(clock_start), delta_time(last_tick), i, particles[i].location, particles[i].velocity, particles[i].acceleration);
                 }
             }
 
-            // reset the delta time
-            delta_time = Duration::new(0,0);
+            update(delta_time(last_tick), &mut particles);
+
+            // record last tick time
+            last_tick = Instant::now();
         }
-        
-        //display(delta_time, &test_object);
-        
-        // update the time
-        let end_time = Instant::now().duration_since(start_time);
-        delta_time += end_time;
-        time += end_time;
-                
-        // DEBUG
-        if DEBUG_OBJECTS {
-            for object in objects.iter() {
-                println!("Time: {}s | Location: {:?} | Velocity: {:?}", time.as_millis() as f32 / 1000.0, object.location, object.velocity);
-            }
-        }
+
+        //display(delta_time, &test_particle);
     }
 }
 
 // update function
 // TODO - I think I'm resetting delta time in the wrong place or just using it incorrectly; frameskips aren't happening at all
-fn update(delta_time: Duration, objects: &mut Vec<PhysicsObject>) {
+fn update(delta_time: u32, particles: &mut Vec<Particle>) {
     if DEBUG_LOOP {
         println!("Updating");
     }
 
     // calculate the exact timestep (fractional time in seconds) from delta time
-    let timestep: f32 = delta_time.as_millis() as f32 / 1000.0;
+    let timestep: f32 = delta_time as f32 / 1000.0;
     
-    for object in objects.iter_mut() {
-        // update location based on velocity
+    for particle in particles.iter_mut() {
+        // add gravitational constant to instantaneous acceleration
+        if particle.gravity_enabled {
+            // acceleration += constant
+            particle.acceleration[2] += GRAVITY;
+        }
+        
+        // update velocity
+        for i in 0..3 {
+            // velocity += timestep * acceleration
+            particle.velocity[i] = timestep.mul_add(particle.acceleration[i], particle.velocity[i]);
+
+            // kill instantaneous acceleration
+            particle.acceleration[i] = 0.0;
+        }
+        
+        // update location
         for i in 0..3 {
             // location += timestep * velocity
-            // use an FMA here to halve the rounding error
-            object.location[i] = timestep.mul_add(object.velocity[i], object.location[i]);
+            particle.location[i] = timestep.mul_add(particle.velocity[i], particle.location[i]);
         }
     
-        // gravity
-        if object.gravity_enabled {
-            // velocity += timestep * gravity
-            // use an FMA here to halve the rounding error
-            object.velocity[2] = timestep.mul_add(GRAVITY, object.velocity[2]);
-        }
-    
-        // prevent the object from going below the ground plane, and kill downward velocity upon "hitting" the ground plane
-        if object.location[2] <= 0.0 {
-            object.location[2] = 0.0;
-            object.velocity[2] = object.velocity[2].max(0.0);
+        // prevent the particle from going below the ground plane, and kill downward velocity upon "hitting" the ground plane
+        if particle.location[2] <= 0.0 {
+            particle.location[2] = 0.0;
+            particle.velocity[2] = particle.velocity[2].max(0.0);
         }
     }
 }
 
 // render function
-fn display(delta_time: Duration, object: &PhysicsObject) {
+fn display(delta_time: Duration, particle: &Particle) {
     // calculate interpolation via delta time
     let interpolation: f32 = delta_time.as_millis() as f32 / UPDATE_INTERVAL as f32;
 
@@ -138,10 +123,29 @@ fn display(delta_time: Duration, object: &PhysicsObject) {
     }
 
     // DEBUG
-    // println!("test_object | Location: {:?} | Velocity: {:?}", render_object.location, render_object.velocity);
+    // println!("test_particle | Location: {:?} | Velocity: {:?}", render_particle.location, render_particle.velocity);
 }
 
 // 1D linear interpolation
 fn lerp_1d(x: f64, y: f64, a: f64) -> f64 {
     x + ((y - x) * a)
+}
+
+// returns a vector3 with random components
+fn make_vector3() -> [f32; 3] {
+    let mut rng = rand::thread_rng();
+
+    let mut vector3: [f32; 3] = [0.0; 3];
+
+    for i in 0..3 {
+        let component = rng.gen::<f32>();
+        vector3[i] = component;
+    }
+
+    vector3
+}
+
+// gets the time in milliseconds that's elapsed since the earlier Instant
+fn delta_time(earlier: Instant) -> u32 {
+    Instant::now().duration_since(earlier).as_millis() as u32
 }

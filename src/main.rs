@@ -1,5 +1,5 @@
 use core::time;
-use std::time::{Duration, Instant};
+use std::{ops::Bound, time::{Duration, Instant}};
 use rand::Rng;
 
 // loop constants
@@ -12,8 +12,50 @@ const DEBUG_PARTICLES: bool = true;
 
 // scene constants
 const TIMESCALE: f32 = 1.0;
+const SIM_BOUNDS: BoundingBox = BoundingBox {
+    size: [10.0, 10.0, 10.0],
+    offset: [-5.0, -5.0, 0.0]
+};
 const GRAVITY: f32 = -9.8;
 const PARTICLE_COUNT: i32 = 1;
+
+// a struct made for defining a bounding box
+#[derive(Copy, Clone)]
+struct BoundingBox {
+    size: [f32; 3],
+    offset: [f32; 3]
+}
+
+impl BoundingBox {
+    // return the lower bounds
+    fn lower(&self) -> [f32; 3] {
+        self.offset
+    }
+
+    // return the upper bounds
+    fn upper(&self) -> [f32; 3] {
+        let mut bounds: [f32; 3] = [0.0; 3];
+
+        for i in 0..3 {
+            bounds[i] = self.size[i] + self.offset[i];
+        }
+
+        bounds
+    }
+}
+
+#[derive(Copy, Clone)]
+struct PlaneCollider {
+    location: [f32; 3],
+    normal: [f32; 3]
+}
+
+impl PlaneCollider {
+    // returns if a location is outside the plane's space (past the plane in the direction of the plane's normal)
+    fn is_outside(&self, point: [f32; 3]) -> bool {
+        true
+    }
+}
 
 // a struct made for physics particles
 #[derive(Copy, Clone)]
@@ -30,20 +72,18 @@ fn main() {
     // start the clock to keep track of real time
     let clock_start = Instant::now();
 
-    // track the end time of the last loop
-    let mut end_time = Instant::now();
-
     // keep track of the last tick time
     let mut last_tick = Instant::now();
     
     // a vector of particles
     let mut particles: Vec<Particle> = vec![];
     for i in 0..PARTICLE_COUNT {
+        // each particle spawned at a random location within the sim bounds
         let new_particle = Particle {
-            location: [0.0, 0.0, 10.0],
+            location: [0.0, 0.0, 5.0],
             velocity: [0.0; 3],
-            acceleration: [0.0; 3],
-            gravity_enabled: true
+            acceleration: random_vector3([100.0; 3], [-50.0; 3]),
+            gravity_enabled: false
         };
 
         particles.push(new_particle)
@@ -104,22 +144,29 @@ fn update(delta_time: u32, particles: &mut Vec<Particle>) {
             particle.location[i] = timestep.mul_add(particle.velocity[i], particle.location[i]);
         }
     
-        // prevent the particle from going below the ground plane, and kill downward velocity upon "hitting" the ground plane
-        if particle.location[2] <= 0.0 {
-            particle.location[2] = 0.0;
-            particle.velocity[2] = particle.velocity[2].max(0.0);
+        // prevent the particle from exiting the sim bounds by clamping its position and killing its velocity upon "hitting" a wall
+        let upper_bounds = SIM_BOUNDS.upper();
+        let lower_bounds = SIM_BOUNDS.lower();
+        for i in 0..3 {
+            if particle.location[i] >= upper_bounds[i] {
+                particle.location[i] = upper_bounds[i];
+                particle.velocity[i] = 0.0;
+            } else if particle.location[i] <= lower_bounds[i] {
+                particle.location[i] = lower_bounds[i];
+                particle.velocity[i] = 0.0;
+            }
         }
     }
 }
 
 // render function
-fn display(delta_time: Duration, particle: &Particle) {
+fn display(delta_time: u32, particle: &Particle) {
     // calculate interpolation via delta time
-    let interpolation: f32 = delta_time.as_millis() as f32 / UPDATE_INTERVAL as f32;
+    let interpolation: f32 = delta_time as f32 / UPDATE_INTERVAL as f32;
 
     // DEBUG
     if DEBUG_LOOP {
-        println!("Displaying | Delta Time: {}ms | Relative Time: {}", delta_time.as_millis(), interpolation);
+        println!("Displaying | Delta Time: {}ms | Relative Time: {}", delta_time, interpolation);
     }
 
     // DEBUG
@@ -132,14 +179,14 @@ fn lerp_1d(x: f64, y: f64, a: f64) -> f64 {
 }
 
 // returns a vector3 with random components
-fn make_vector3() -> [f32; 3] {
+fn random_vector3(scale: [f32; 3], offset: [f32; 3]) -> [f32; 3] {
     let mut rng = rand::thread_rng();
 
     let mut vector3: [f32; 3] = [0.0; 3];
 
     for i in 0..3 {
         let component = rng.gen::<f32>();
-        vector3[i] = component;
+        vector3[i] = component.mul_add(scale[i], offset[i]);
     }
 
     vector3

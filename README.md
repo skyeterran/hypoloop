@@ -4,3 +4,4 @@
 - Constant update rate
 - Variable display rate
 - Arbitrary simulation timescale
+- Real-time can be disabled for high-speed simulations

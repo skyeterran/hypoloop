@@ -12,7 +12,7 @@ const REALTIME: bool = true;
 const DEBUG_LOOP: bool = false;
 const DEBUG_TIME: bool = true;
 
-fn main() {
+pub fn run_simulation() {
     // allow the simulation to be stopped from within the loop (by setting simulate to false)
     let mut simulate: bool = true;
     

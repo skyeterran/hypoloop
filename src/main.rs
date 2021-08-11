@@ -1,4 +1,3 @@
-use core::time;
 use std::time::{Duration, Instant};
 
 // sim constants

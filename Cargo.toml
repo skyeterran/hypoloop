@@ -1,7 +1,11 @@
 [package]
 name = "hypoloop"
+description = "A low-level control loop for real-time and baked simulations."
 version = "0.1.0"
 edition = "2018"
+license-file = "LICENSE"
+repository = "https://github.com/skyeterran/hypoloop"
+keywords = ["gamedev", "simulation", "graphics"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

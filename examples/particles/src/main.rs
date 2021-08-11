@@ -1,3 +1,9 @@
+use hypoloop::Simulation;
+
 fn main() {
-    hypoloop::run_simulation();
+    // create sim
+    let mut sim = Simulation::new();
+
+    // run sim
+    sim.run();
 }

@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 // if REALTIME is false, the simulation runs as fast as possible and doesn't run the display function
 const UPDATE_INTERVAL: u32 = 40;
 const TIMESCALE: f32 = 1.0;
-const REALTIME: bool = false;
+const REALTIME: bool = true;
 
 // debug constants
 const DEBUG_LOOP: bool = false;
@@ -33,12 +33,12 @@ fn main() {
             // mutable delta time and timescale for flexibility
             let mut current_timescale: f32;
             let mut current_delta_time: u32;
+            let elapsed_time = Instant::now().duration_since(last_tick);
             
             // update clocks
             if REALTIME {
                 current_timescale = TIMESCALE;
                 current_delta_time = delta_time(last_tick);
-                let elapsed_time = Instant::now().duration_since(last_tick);
                 sim_time += elapsed_time.mul_f32(TIMESCALE);
                 irl_time += elapsed_time;
             } else {
@@ -50,7 +50,9 @@ fn main() {
 
             // DEBUG
             if DEBUG_TIME {
-                println!("REALTIME: {} | IRL time: {}ms | Sim time: {}ms | Delta time: {}ms", REALTIME, irl_time.as_millis(), sim_time.as_millis(), current_delta_time);
+                let loop_delay_ms = elapsed_time.as_nanos() as f32 / 1_000_000.0;
+                let loop_rate_hz = 1000.0 / loop_delay_ms;
+                println!("REALTIME: {} | IRL time: {}ms | Sim time: {}ms | Tick delay/rate: {}ms/{}hz", REALTIME, irl_time.as_millis(), sim_time.as_millis(), loop_delay_ms, loop_rate_hz);
             }
 
             // update

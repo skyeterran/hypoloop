@@ -6,6 +6,7 @@ edition = "2018"
 license-file = "LICENSE"
 repository = "https://github.com/skyeterran/hypoloop"
 keywords = ["gamedev", "simulation", "graphics"]
+include = ["/src", "LICENSE", "/examples"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -2,10 +2,12 @@ use core::time;
 use std::time::{Duration, Instant};
 
 // sim constants
-// update interval is the minimum delay (in milliseconds) between update ticks
+// UPDATE_INTERVAL is the minimum delay (in milliseconds) between update ticks
+// TIMESCALE is the rate of the simulation proportional to real-time
+// if REALTIME is false, the simulation runs as fast as possible and doesn't run the display function
 const UPDATE_INTERVAL: u32 = 40;
-// timescale is the rate of the simulation proportional to real-time
 const TIMESCALE: f32 = 1.0;
+const REALTIME: bool = false;
 
 // debug constants
 const DEBUG_LOOP: bool = false;
@@ -22,31 +24,46 @@ fn main() {
     let mut last_tick = Instant::now();
 
     // real-time and sim-time clocks
-    let mut real_time = Duration::new(0, 0);
+    let mut irl_time = Duration::new(0, 0);
     let mut sim_time = Duration::new(0, 0);
 
     while simulate {
         // TODO - support frameskips
-        if delta_time(last_tick) >= UPDATE_INTERVAL {
+        if !REALTIME || delta_time(last_tick) >= UPDATE_INTERVAL {
+            // mutable delta time and timescale for flexibility
+            let mut current_timescale: f32;
+            let mut current_delta_time: u32;
+            
             // update clocks
-            let elapsed_time = Instant::now().duration_since(last_tick);
-            real_time += elapsed_time;
-            sim_time += elapsed_time.mul_f32(TIMESCALE);
+            if REALTIME {
+                current_timescale = TIMESCALE;
+                current_delta_time = delta_time(last_tick);
+                let elapsed_time = Instant::now().duration_since(last_tick);
+                sim_time += elapsed_time.mul_f32(TIMESCALE);
+                irl_time += elapsed_time;
+            } else {
+                current_timescale = 1.0;
+                current_delta_time = UPDATE_INTERVAL;
+                sim_time += Duration::from_millis(UPDATE_INTERVAL as u64);
+                irl_time = Instant::now().duration_since(clock_start);
+            }
 
             // DEBUG
             if DEBUG_TIME {
-                println!("Real time: {}ms | Sim time: {}ms | Delta time: {}ms", real_time.as_millis(), sim_time.as_millis(), delta_time(last_tick));
+                println!("REALTIME: {} | IRL time: {}ms | Sim time: {}ms | Delta time: {}ms", REALTIME, irl_time.as_millis(), sim_time.as_millis(), current_delta_time);
             }
 
             // update
-            update(delta_time(last_tick), TIMESCALE);
+            update(current_delta_time, current_timescale);
 
             // record last tick time
             last_tick = Instant::now();
         }
 
         // display
-        display(delta_time(last_tick), TIMESCALE);
+        if REALTIME {
+            display(delta_time(last_tick), TIMESCALE);
+        }
     }
 }
 

@@ -16,7 +16,7 @@ pub struct Simulation {
 }
 
 impl Simulation {
-    // Creates a new simulation with default values
+    /// Creates a new simulation with default values
     pub fn new() -> Simulation {
         Simulation {
             update_interval: 40,

@@ -100,7 +100,7 @@ pub mod core {
         }
     
         /// Initializes and runs the simulation using a user-supplied callback as the update logic
-        pub fn run(&mut self, mut update_callback: impl FnMut(&mut State)) {
+        pub fn run(&mut self, mut update_callback: impl FnMut(&mut State), mut display_callback: impl FnMut(&State)) {
             // Make sure the simulation will run
             self.state.simulate = true;
 
@@ -133,7 +133,7 @@ pub mod core {
         
                 // display
                 if self.realtime {
-                    display(delta_time(self.state.last_tick), self.state.timescale, self.state.update_interval);
+                    display_callback(&self.state);
                 }
             }
         }

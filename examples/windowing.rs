@@ -30,7 +30,7 @@ fn main() {
     };
     
     // create a closure containing your display logic
-    let display_logic = move |state: &State| {
+    let display_logic = move |state: &mut State| {
         // redraw the winit window
         window.request_redraw();
     };
@@ -41,6 +41,6 @@ fn main() {
     // run the winit event loop with embedded hypoloop sim
     event_loop.run(move |event, _, control_flow| {
         // "step" the sim forward
-        sim.step(&mut update_logic, &display_logic);
+        sim.step(&mut update_logic, &mut display_logic);
     });
 }

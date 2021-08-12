@@ -1,8 +1,9 @@
 use hypoloop::core::{State, Loop};
 
 fn main() {
-    // create sim with default configuration
+    // create a new sim loop
     let mut sim = Loop::new();
+    sim.set_update_interval(20);
 
     // test variable
     let mut x: f32 = 0.0;
@@ -10,7 +11,7 @@ fn main() {
     // create a closure containing your update logic
     let mut update_logic = move |state: &mut State| {    
         // access loop metadata via the State object    
-        x += state.get_timescale();
+        x += state.get_timestep();
         print!("x: {} | ", x);
 
         // print information about the current tick's timings
@@ -18,7 +19,7 @@ fn main() {
     };
     
     // create a closure containing your display logic
-    let display_logic = move |state: &State| {
+    let mut display_logic = move |state: &mut State| {
         //
     };
 
@@ -27,6 +28,6 @@ fn main() {
     sim.init();
     loop {
         // "step" the sim forward
-        sim.step(&mut update_logic, &display_logic);
+        sim.step(&mut update_logic, &mut display_logic);
     }
 }

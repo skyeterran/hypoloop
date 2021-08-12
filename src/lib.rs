@@ -36,7 +36,12 @@ pub mod core {
             new_state
         }
 
-        /// Returns the current "delta time", the time elapsed since the last update tick in milliseconds
+        /// Returns the "update interval", the minimum time (in ms) which will elapse between update ticks
+        pub fn get_update_interval(self) -> u32 {
+            self.update_interval
+        }
+
+        /// Returns the current "delta time", the time (in ms) elapsed since the last update tick
         pub fn get_delta_time(self) -> u32 {
             self.delta_time
         }
@@ -69,6 +74,11 @@ pub mod core {
         /// Resumes the simulation from within update logic
         pub fn resume(&mut self) {
             self.simulate = true;
+        }
+
+        /// Changes the simulation update interval
+        pub fn set_update_interval(&mut self, update_interval: u32) {
+            self.update_interval = update_interval;
         }
 
         /// Changes the simulation timescale

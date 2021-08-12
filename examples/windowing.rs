@@ -1,4 +1,9 @@
 use hypoloop::core::{State, Loop};
+use winit::{
+    event::{ElementState, Event, KeyboardInput, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::{CursorIcon, WindowBuilder},
+};
 
 fn main() {
     // create sim with default configuration
@@ -6,6 +11,13 @@ fn main() {
 
     // test variable
     let mut x: f32 = 0.0;
+    
+    // create a winit event loop
+    let event_loop = EventLoop::new();
+    
+    // create a winit window
+    let window = WindowBuilder::new().build(&event_loop).unwrap();
+    window.set_title("Windowing test with hypoloop");
 
     // create a closure containing your update logic
     let mut update_logic = move |state: &mut State| {    
@@ -19,14 +31,16 @@ fn main() {
     
     // create a closure containing your display logic
     let display_logic = move |state: &State| {
-        //
+        // redraw the winit window
+        window.request_redraw();
     };
-
-    // run the simulation with your user-defined update and display logic
+    
     // initialize the sim (cleans internal clocks, etc.)
     sim.init();
-    loop {
+
+    // run the winit event loop with embedded hypoloop sim
+    event_loop.run(move |event, _, control_flow| {
         // "step" the sim forward
         sim.step(&mut update_logic, &display_logic);
-    }
+    });
 }

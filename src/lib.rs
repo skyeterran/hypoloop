@@ -12,7 +12,9 @@ pub struct Simulation {
     update_interval: u32,
     timescale: f32,
     realtime: bool,
-    simulate: bool
+    simulate: bool,
+    update_function: fn(),
+    display_function: fn()
 }
 
 impl Simulation {
@@ -22,8 +24,25 @@ impl Simulation {
             update_interval: 40,
             timescale: 1.0,
             realtime: true,
-            simulate: true
+            simulate: true,
+            update_function: default_update,
+            display_function: default_display
         }
+    }
+
+    /// Allows the user to pass in a custom update function
+    pub fn set_update_function(&mut self, user_function: fn()) {
+        self.update_function = user_function;
+    }
+
+    /// Allows the user to pass in a custom display function
+    pub fn set_display_function(&mut self, user_function: fn()) {
+        self.display_function = user_function;
+    }
+
+    /// Allows the user to turn realtime mode on/off
+    pub fn set_realtime(&mut self, realtime: bool) {
+        self.realtime = realtime;
     }
 
     /// Initializes and runs the simulation
@@ -66,16 +85,16 @@ impl Simulation {
                     println!("Realtime: {} | IRL time: {}ms | Sim time: {}ms | Tick delay/rate: {}ms/{}hz", self.realtime, irl_time.as_millis(), sim_time.as_millis(), loop_delay_ms, loop_rate_hz);
                 }
     
-                // update
-                update(current_delta_time, current_timescale);
-    
                 // record last tick time
                 last_tick = Instant::now();
+    
+                // update
+                update(self.update_function, current_delta_time, current_timescale);
             }
     
             // display
             if self.realtime {
-                display(delta_time(last_tick), self.timescale, self.update_interval);
+                display(self.display_function, delta_time(last_tick), self.timescale, self.update_interval);
             }
         }
     }
@@ -84,7 +103,7 @@ impl Simulation {
 
 // update function
 // this is where all your per-tick logic should go
-fn update(delta_time: u32, timescale: f32) {
+fn update(user_function: fn(), delta_time: u32, timescale: f32) {
     // DEBUG
     if DEBUG_LOOP {
         println!("Updating...");
@@ -92,11 +111,14 @@ fn update(delta_time: u32, timescale: f32) {
 
     // use timestep to scale per-tick calculations appropriately
     let timestep: f32 = delta_time as f32 / 1000.0 * timescale;
+
+    // call user update function
+    user_function();
 }
 
 // display function
 // this is where you should call a render function
-fn display(delta_time: u32, timescale: f32, update_interval: u32) {
+fn display(user_function: fn(), delta_time: u32, timescale: f32, update_interval: u32) {
     // DEBUG
     if DEBUG_LOOP {
         println!("Displaying...");
@@ -104,9 +126,20 @@ fn display(delta_time: u32, timescale: f32, update_interval: u32) {
 
     // use interpolation to smooth display values between ticks
     let interpolation: f32 = delta_time as f32 / update_interval as f32 * timescale;
+
+    // call user display function
+    user_function();
 }
 
 // gets the time in milliseconds that's elapsed since the earlier Instant
 fn delta_time(earlier: Instant) -> u32 {
     Instant::now().duration_since(earlier).as_millis() as u32
+}
+
+// default update function (does nothing)
+fn default_update() {
+}
+
+// default display function (does nothing)
+fn default_display() {
 }

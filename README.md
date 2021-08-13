@@ -4,6 +4,7 @@
 - Constant update rate
 - Variable display rate
 - Arbitrary simulation timescale
+- Support for multiple simultaneous simulations with shared data
 - Compatible with other libraries' built-in event loops
 - Real-time can be disabled for high-speed simulations
 

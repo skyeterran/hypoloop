@@ -136,6 +136,11 @@ pub mod core {
             self.state.sim_time = Duration::new(0,0);
         }
 
+        /// Returns a mutable reference to the Loop's State object
+        pub fn mut_state(&mut self) -> &mut State {
+            &mut self.state
+        }
+
         /// Executes the per-loop logic (can be triggered manually so that hypoloop can be tied into external event loops)
         pub fn step(&mut self, mut update_callback: impl FnMut(&mut State), mut display_callback: impl FnMut(&mut State)) {
             // don't run if the simulation is paused

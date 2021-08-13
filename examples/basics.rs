@@ -9,7 +9,7 @@ fn main() {
     let mut x: f32 = 0.0;
 
     // create a closure containing your update logic
-    let mut update_logic = move |state: &mut State| {    
+    let mut tick = move |state: &mut State| {    
         // access loop metadata via the State object    
         x += state.get_timestep();
         print!("x: {} | ", x);
@@ -19,7 +19,7 @@ fn main() {
     };
     
     // create a closure containing your display logic
-    let mut display_logic = move |state: &mut State| {
+    let mut display = move |state: &mut State| {
         //
     };
 
@@ -28,6 +28,6 @@ fn main() {
     sim.init();
     loop {
         // "step" the sim forward
-        sim.step(&mut update_logic, &mut display_logic);
+        sim.step(&mut tick, &mut display);
     }
 }
